@@ -1001,5 +1001,238 @@
   });
 </script>
 
+<!-- FAQ AUTO-REPLY WIDGET (self-contained: styles, markup, script) -->
+<style>
+  .iafaq-btn {
+    position: fixed; right: 24px; bottom: calc(92px + env(safe-area-inset-bottom, 0px)); z-index: 901;
+    width: 56px; height: 56px; border-radius: 50%; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #00D2FF, #7C3AED); border: none; color: #08090B;
+    box-shadow: 0 0 18px rgba(124,58,237,0.4), 0 6px 20px rgba(0,0,0,0.5);
+    transition: transform 0.3s ease;
+  }
+  .iafaq-btn:hover { transform: translateY(-3px); }
+  .iafaq-btn svg { width: 26px; height: 26px; }
+  .iafaq-panel {
+    position: fixed; right: 24px; bottom: calc(160px + env(safe-area-inset-bottom, 0px)); z-index: 902;
+    width: 360px; max-width: calc(100vw - 32px); height: 500px; max-height: calc(100vh - 190px);
+    display: none; flex-direction: column; overflow: hidden;
+    background: #0E0F12; border: 1px solid #1E2024; border-radius: 14px;
+    box-shadow: 0 0 30px rgba(0,210,255,0.15), 0 16px 40px rgba(0,0,0,0.6);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+  }
+  .iafaq-panel.open { display: flex; }
+  .iafaq-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 14px 16px; border-bottom: 1px solid #1E2024; background: #101114;
+  }
+  .iafaq-title { font-size: 15px; font-weight: 600; color: #EDEEF2; }
+  .iafaq-sub { font-size: 11px; color: #8A8F99; margin-top: 2px; }
+  .iafaq-close { background: none; border: none; color: #B8BCC5; font-size: 22px; line-height: 1; cursor: pointer; padding: 4px; }
+  .iafaq-close:hover { color: #EDEEF2; }
+  .iafaq-body { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .iafaq-msg { max-width: 88%; padding: 10px 12px; border-radius: 12px; font-size: 14px; line-height: 1.5; white-space: pre-line; }
+  .iafaq-bot { align-self: flex-start; background: #16181D; color: #D5D7DC; border: 1px solid #1E2024; border-bottom-left-radius: 4px; }
+  .iafaq-user { align-self: flex-end; background: linear-gradient(135deg, #00D2FF, #7C3AED); color: #08090B; font-weight: 500; border-bottom-right-radius: 4px; }
+  .iafaq-wa {
+    display: inline-block; margin-top: 8px; padding: 7px 12px; border-radius: 8px;
+    border: 1px solid #00D2FF; color: #00D2FF; font-size: 13px; font-weight: 600;
+  }
+  .iafaq-wa:hover { background: #00D2FF; color: #08090B; }
+  .iafaq-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .iafaq-chip {
+    background: none; border: 1px solid #2A2D33; color: #D5D7DC; border-radius: 999px;
+    padding: 6px 11px; font-size: 12.5px; cursor: pointer; font-family: inherit;
+  }
+  .iafaq-chip:hover { border-color: #00D2FF; color: #00D2FF; }
+  .iafaq-form { display: flex; gap: 8px; padding: 12px; border-top: 1px solid #1E2024; background: #101114; }
+  .iafaq-input {
+    flex: 1; min-width: 0; background: #08090B; border: 1px solid #2A2D33; border-radius: 8px;
+    color: #EDEEF2; padding: 10px 12px; font-size: 14px; font-family: inherit; outline: none;
+  }
+  .iafaq-input:focus { border-color: #00D2FF; }
+  .iafaq-send {
+    background: linear-gradient(135deg, #00D2FF, #7C3AED); border: none; border-radius: 8px;
+    color: #08090B; font-weight: 600; font-size: 14px; padding: 0 14px; cursor: pointer;
+  }
+  @media (max-width: 768px) {
+    .iafaq-btn { right: 16px; bottom: calc(78px + env(safe-area-inset-bottom, 0px)); width: 52px; height: 52px; }
+    .iafaq-panel { right: 16px; bottom: calc(140px + env(safe-area-inset-bottom, 0px)); max-height: calc(100vh - 160px); }
+  }
+</style>
+
+<button class="iafaq-btn" id="iafaqBtn" type="button" aria-label="Ask a quick question" title="Ask a quick question" aria-expanded="false" aria-controls="iafaqPanel">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/></svg>
+</button>
+
+<div class="iafaq-panel" id="iafaqPanel" role="dialog" aria-label="Infinity AI quick answers">
+  <div class="iafaq-head">
+    <div>
+      <div class="iafaq-title">Infinity AI</div>
+      <div class="iafaq-sub">Instant answers to common questions</div>
+    </div>
+    <button class="iafaq-close" id="iafaqClose" type="button" aria-label="Close">×</button>
+  </div>
+  <div class="iafaq-body" id="iafaqBody" aria-live="polite"></div>
+  <form class="iafaq-form" id="iafaqForm" autocomplete="off">
+    <input class="iafaq-input" id="iafaqInput" type="text" maxlength="300" placeholder="Type your question…" aria-label="Your question">
+    <button class="iafaq-send" type="submit">Ask</button>
+  </form>
+</div>
+
+<script>
+(function () {
+  var WA_NUMBER = '923716485882';
+
+  // Each FAQ: keywords (English + common Roman Urdu), the answer, and a chip label (optional).
+  var FAQS = [
+    { id: 'services', chip: 'What do you do?',
+      keys: ['what do you do', 'services', 'service', 'offer', 'help with', 'kya karte', 'kaam', 'about'],
+      answer: 'We build AI automation for growing businesses:\n• WhatsApp assistants that answer customers, take orders and bookings 24/7\n• Payment automation with PayFast checkout and WhatsApp receipts\n• Tool connections (Google Sheets, online stores, CRMs) using n8n\n• E-commerce, Shopify and business websites' },
+    { id: 'price', chip: 'How much does it cost?',
+      keys: ['cost', 'price', 'pricing', 'charges', 'fee', 'fees', 'budget', 'rate', 'how much', 'kitna', 'kitne', 'qeemat', 'paise', 'rupees', 'pkr'],
+      answer: 'We don\'t sell fixed packages. After a free automation review, you get a clear, fixed quote before any work starts, with no hidden costs.', wa: true },
+    { id: 'time', chip: 'How long does setup take?',
+      keys: ['how long', 'how much time', 'time', 'timeline', 'days', 'weeks', 'fast', 'quick', 'kitna waqt', 'kab tak', 'deadline'],
+      answer: 'Most automations go live in 3–7 days. Simple WhatsApp bots can be ready in 2–3 days. Complex integrations may take 2–4 weeks, depending on your needs.' },
+    { id: 'whatsapp', chip: 'WhatsApp bot',
+      keys: ['whatsapp', 'bot', 'chatbot', 'auto reply', 'auto-reply', 'replies', 'orders', 'booking', 'bookings', 'appointment'],
+      answer: 'Our WhatsApp assistant answers customer questions, takes orders and bookings, sends payment and appointment reminders, and confirms everything automatically, even at 2 AM.\n\nLive example: HAPS, a heart-attack prevention clinic in Lahore, where patients book, pay and get confirmations on WhatsApp.' },
+    { id: 'payment', chip: 'Payment options',
+      keys: ['payment', 'payments', 'pay', 'payfast', 'jazzcash', 'easypaisa', 'bank', 'card', 'invoice', 'receipt'],
+      answer: 'We set up PayFast online checkout and bank transfer payments, with automatic payment confirmation, invoices and WhatsApp receipts.\n\nNeed a specific gateway? Ask us on WhatsApp and we\'ll check what fits your business.', wa: true },
+    { id: 'shopify', chip: 'Shopify / online store',
+      keys: ['shopify', 'ecommerce', 'e-commerce', 'store', 'shop', 'online store', 'website', 'site', 'woocommerce', 'dukaan'],
+      answer: 'We build online stores, custom-built or connected to Shopify, with product catalog, cart, checkout, online payments, courier integration and WhatsApp order alerts. We also build business websites with booking and payments built in.' },
+    { id: 'tools', chip: 'Can you connect my tools?',
+      keys: ['integrate', 'integration', 'connect', 'google sheet', 'sheets', 'excel', 'crm', 'n8n', 'zapier', 'tools', 'database'],
+      answer: 'Yes. We connect the tools you already use (Google Sheets, Excel, online stores, CRMs and databases) with n8n workflows and custom scripts, so orders, stock and customer lists update themselves.' },
+    { id: 'tech', chip: 'Do I need technical skills?',
+      keys: ['technical', 'skills', 'coding', 'difficult', 'easy', 'train', 'training', 'mushkil'],
+      answer: 'No. We handle all the setup. You just tell us what you want to automate, and we\'ll train your team to use it.' },
+    { id: 'examples', chip: 'See your work',
+      keys: ['example', 'examples', 'portfolio', 'your work', 'projects', 'clients', 'case study', 'proof', 'demo'],
+      answer: 'Some of our work:\n• HAPS: WhatsApp booking + online payment system for a clinic (haps.pk)\n• Data Digitizers: professional website for a data services company\n• Nexus Ops: AI pipeline that reads, scores and answers WhatsApp leads\n\nScroll to the Case Studies section on this page for details.' },
+    { id: 'security', keys: ['secure', 'security', 'data', 'privacy', 'safe', 'hack'],
+      answer: 'Your data is encrypted, access is limited to authorised people, and your customer information stays under your control. We never sell or share it.' },
+    { id: 'support', keys: ['support', 'maintenance', 'after', 'update', 'updates', 'help later', 'problem', 'issue'],
+      answer: 'After launch we monitor and optimise your automation, handle updates, and help you scale it as your business grows.' },
+    { id: 'location', keys: ['where', 'location', 'based', 'office', 'country', 'international', 'abroad', 'usa', 'uk', 'europe', 'remote'],
+      answer: 'We\'re based in Lahore, Pakistan, and work fully online with businesses in Pakistan and worldwide.' },
+    { id: 'hours', keys: ['hours', 'timing', 'timings', 'available', 'open', 'contact', 'reach', 'call', 'number'],
+      answer: 'We reply on WhatsApp Monday to Saturday, 12 PM to 12 AM (Pakistan time). Messages outside these hours get a reply the next working day.', wa: true },
+    { id: 'start', chip: 'Get a free review',
+      keys: ['start', 'get started', 'review', 'free', 'consultation', 'audit', 'hire', 'begin', 'interested', 'shuru'],
+      answer: 'Easy: tell us which task takes up most of your time. Fill in the form on this page, or message us on WhatsApp, and we\'ll send you 3 automation ideas, free.', wa: true },
+    { id: 'hello', keys: ['hi', 'hello', 'hey', 'salam', 'assalam', 'aoa'],
+      answer: 'Hello! 👋 Ask me anything about our services, pricing or timelines, or pick a question below.' }
+  ];
+
+  var btn = document.getElementById('iafaqBtn');
+  var panel = document.getElementById('iafaqPanel');
+  var body = document.getElementById('iafaqBody');
+  var form = document.getElementById('iafaqForm');
+  var input = document.getElementById('iafaqInput');
+  var closeBtn = document.getElementById('iafaqClose');
+  var started = false;
+
+  function waLink(text) {
+    return 'https://wa.me/' + WA_NUMBER + '?text=' + encodeURIComponent(text);
+  }
+
+  function addMsg(text, who, waText) {
+    var div = document.createElement('div');
+    div.className = 'iafaq-msg ' + (who === 'user' ? 'iafaq-user' : 'iafaq-bot');
+    div.textContent = text;
+    if (waText) {
+      div.appendChild(document.createElement('br'));
+      var a = document.createElement('a');
+      a.className = 'iafaq-wa';
+      a.href = waLink(waText);
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = 'Continue on WhatsApp →';
+      div.appendChild(a);
+    }
+    body.appendChild(div);
+    body.scrollTop = body.scrollHeight;
+  }
+
+  function addChips() {
+    var wrap = document.createElement('div');
+    wrap.className = 'iafaq-chips';
+    FAQS.forEach(function (f) {
+      if (!f.chip) return;
+      var c = document.createElement('button');
+      c.type = 'button';
+      c.className = 'iafaq-chip';
+      c.textContent = f.chip;
+      c.addEventListener('click', function () { ask(f.chip, f); });
+      wrap.appendChild(c);
+    });
+    body.appendChild(wrap);
+    body.scrollTop = body.scrollHeight;
+  }
+
+  function findAnswer(q) {
+    var text = ' ' + q.toLowerCase().replace(/[^a-z0-9؀-ۿ\s-]/g, ' ').replace(/\s+/g, ' ') + ' ';
+    var best = null, bestScore = 0;
+    FAQS.forEach(function (f) {
+      var score = 0;
+      f.keys.forEach(function (k) {
+        if (text.indexOf(' ' + k + ' ') !== -1) score += k.split(' ').length * 2;
+        else if (k.length > 4 && text.indexOf(k) !== -1) score += 1;
+      });
+      if (f.id === 'hello' && score > 0) score = 0.5;
+      if (score > bestScore) { bestScore = score; best = f; }
+    });
+    return best;
+  }
+
+  function ask(question, known) {
+    addMsg(question, 'user');
+    var f = known || findAnswer(question);
+    setTimeout(function () {
+      if (f) {
+        addMsg(f.answer, 'bot', f.wa ? 'Hi Infinity AI, ' + question : null);
+      } else {
+        addMsg('I don\'t have a ready answer for that one, but we\'ll reply personally on WhatsApp.', 'bot',
+          'Hi Infinity AI, I have a question: ' + question);
+      }
+    }, 350);
+  }
+
+  function openPanel() {
+    panel.classList.add('open');
+    btn.setAttribute('aria-expanded', 'true');
+    if (!started) {
+      started = true;
+      addMsg('Hi! 👋 I\'m the Infinity AI assistant. Ask a question or pick one below.', 'bot');
+      addChips();
+    }
+    setTimeout(function () { input.focus(); }, 50);
+  }
+
+  function closePanel() {
+    panel.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false');
+  }
+
+  btn.addEventListener('click', function () {
+    panel.classList.contains('open') ? closePanel() : openPanel();
+  });
+  closeBtn.addEventListener('click', closePanel);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePanel(); });
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var q = input.value.trim();
+    if (!q) return;
+    input.value = '';
+    ask(q);
+  });
+})();
+</script>
+<!-- END FAQ AUTO-REPLY WIDGET -->
+
 </body>
 </html>
